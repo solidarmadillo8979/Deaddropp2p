@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D.DROP P2P, Live Transfer</title>
+<style>
+:root {
+  --bg: #000000; --panel: #0a0a0a; --panel2: #111111;
+  --border: #1e1e1e; --border2: #2a2a2a;
+  --text: #ededed; --muted: #9c9c9c; --faint: #6f6f6f;
+  --green: #2fbf71; --green-dim: #1d7a48; --red: #e5484d; --amber: #d9a441;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px; line-height: 1.5; -webkit-text-size-adjust: 100%;
+}
+h1, h2, h3 { margin: 0 0 8px; line-height: 1.25; font-weight: 650; }
+h1 { font-size: 40px; letter-spacing: 0.06em; }
+h2 { font-size: 22px; } h3 { font-size: 17px; }
+p { margin: 0 0 10px; }
+.muted { color: var(--muted); } .fine { color: var(--faint); font-size: 13px; }
+.error { color: var(--red); font-size: 14px; } .ok { color: var(--green); font-size: 14px; }
+.hint { color: var(--muted); font-size: 13px; }
+.topbar {
+  position: sticky; top: 0; z-index: 20; background: #000;
+  border-bottom: 1px solid var(--border); display: flex;
+  align-items: center; justify-content: space-between;
+  padding: 10px 14px; min-height: 52px;
+}
+.brand { display: flex; flex-direction: column; line-height: 1.1; }
+.brand-mark { font-weight: 800; letter-spacing: 0.12em; font-size: 18px; }
+.brand-sub { color: var(--faint); font-size: 10px; letter-spacing: 0.22em; }
+.menu-btn {
+  background: var(--panel2); color: var(--text); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 8px 12px; font-size: 13px; letter-spacing: 0.08em; cursor: pointer;
+}
+.main-nav {
+  display: none; position: absolute; top: 52px; left: 0; right: 0;
+  background: #000; border-bottom: 1px solid var(--border);
+  padding: 6px 14px 12px; max-height: calc(100dvh - 52px); overflow-y: auto;
+}
+.main-nav.open { display: block; }
+.main-nav button {
+  display: block; width: 100%; text-align: left; background: none; border: 0;
+  border-bottom: 1px solid var(--border); color: var(--text);
+  padding: 13px 2px; font-size: 16px; cursor: pointer;
+}
+.main-nav button:last-child { border-bottom: 0; }
+.main-nav button:hover { color: var(--green); }
+main { padding: 16px 14px 40px; max-width: 720px; margin: 0 auto; }
+.view[hidden] { display: none; }
+[hidden] { display: none !important; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+.tab { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); padding: 9px 10px; font-size: 15px; cursor: pointer; }
+.tab.active { color: var(--text); border-bottom-color: var(--green); }
+label { display: block; margin-bottom: 12px; font-size: 14px; color: var(--muted); }
+input[type="text"], input[type="password"], input[type="search"], input:not([type]), select, textarea {
+  display: block; width: 100%; margin-top: 5px; background: #000; color: var(--text);
+  border: 1px solid var(--border2); border-radius: 7px; padding: 11px 12px;
+  font-size: 16px; font-family: inherit;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--green-dim); outline-offset: 0; border-color: var(--green-dim); }
+textarea { resize: vertical; min-height: 90px; }
+textarea.code { font-family: ui-monospace, monospace; font-size: 12px; min-height: 110px; word-break: break-all; }
+input[type="file"] { display: block; width: 100%; margin-top: 5px; color: var(--muted); font-size: 14px; }
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--green); vertical-align: middle; margin-right: 8px; }
+label.check { color: var(--text); font-size: 15px; }
+.btn { background: var(--panel2); color: var(--text); border: 1px solid var(--border2); border-radius: 7px; padding: 11px 16px; font-size: 15px; cursor: pointer; }
+.btn.primary { background: var(--green); border-color: var(--green); color: #000; font-weight: 700; }
+.btn.danger { background: #1c0a0b; border-color: #5a2224; color: #ff8a8e; }
+.btn.small { padding: 7px 11px; font-size: 14px; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.btn:disabled { opacity: 0.55; cursor: wait; }
+.room-code { font-size: 34px; font-weight: 800; letter-spacing: 0.3em; color: var(--green); text-align: center; margin: 6px 0; font-family: ui-monospace, monospace; }
+.qr-wrap { text-align: center; margin: 10px 0; }
+.qr-wrap img { background: #fff; padding: 10px; border-radius: 8px; max-width: 300px; width: 100%; height: auto; }
+.verify-code { font-family: ui-monospace, monospace; font-size: 20px; font-weight: 700; letter-spacing: 0.15em; color: var(--green); }
+.status-line { color: var(--muted); font-size: 14px; }
+.progress { height: 10px; background: var(--panel2); border: 1px solid var(--border2); border-radius: 999px; overflow: hidden; margin: 8px 0; }
+.progress > div { height: 100%; background: var(--green); width: 0%; }
+.file-list, .plain-list { list-style: none; margin: 0; padding: 0; }
+.file-list li, .plain-list li { border-top: 1px solid var(--border); padding: 10px 2px; }
+.file-list li:first-child, .plain-list li:first-child { border-top: 0; }
+.chat-log { list-style: none; margin: 8px 0; padding: 0; max-height: 260px; overflow-y: auto; }
+.chat-log li { margin: 6px 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel2); white-space: pre-wrap; word-wrap: break-word; }
+.chat-log li.me { border-color: var(--green); }
+.chat-log .who { color: var(--green); font-size: 12px; display: block; margin-bottom: 2px; }
+.chat-row { display: flex; gap: 8px; align-items: stretch; margin-top: 6px; }
+.chat-row input { flex: 1; }
+form.dragging { outline: 2px dashed var(--green); outline-offset: 4px; }
+.received-img { display: block; max-width: 100%; max-height: 180px; border-radius: 8px; margin-top: 6px; }
+.privacy-note { border: 1px solid var(--border); border-left: 3px solid var(--green); background: var(--panel2); border-radius: 8px; padding: 10px 12px; font-size: 14px; margin: 10px 0; }
+.privacy-note strong { color: var(--green); }
+.invite-chip { border: 1px solid var(--border); background: var(--panel2); border-radius: 8px; padding: 10px 12px; margin: 4px 0 8px; }
+.invite-nick { color: var(--green); text-decoration: underline; font-size: 16px; }
+.message-text { white-space: pre-wrap; word-break: break-word; background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 13px; }
+.scan-box { border: 1px solid var(--border2); border-radius: 8px; padding: 10px; margin: 10px 0; }
+.scan-box video { width: 100%; border-radius: 6px; background: #000; }
+.foot { border-top: 1px solid var(--border); color: var(--faint); font-size: 13px; padding: 14px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; max-width: 720px; margin: 0 auto; }
+.toast { position: fixed; left: 14px; right: 14px; bottom: 16px; background: #111; border: 1px solid var(--green-dim); color: var(--text); border-radius: 9px; padding: 12px 14px; z-index: 50; max-width: 560px; margin: 0 auto; }
+@media (min-width: 640px) {
+  .menu-btn { display: none; }
+  .main-nav { display: flex; position: static; max-height: none; overflow: visible; border-bottom: 0; padding: 0; gap: 2px; }
+  .main-nav button { border-bottom: 0; padding: 8px 10px; width: auto; font-size: 14px; }
+  .topbar { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brand-mark">D.DROP</span><span class="brand-sub">PEER-TO-PEER TRANSFER</span></div>
+  <button id="menuBtn" class="menu-btn" aria-label="Menu" aria-expanded="false">MENU</button>
+  <nav id="mainNav" class="main-nav" aria-label="Main">
+    <button data-view="transfer">Transfer</button>
+    <button data-view="history">History</button>
+    <button data-view="help">Help</button>
+  </nav>
+</header>
+
+<main id="main">
+  <section id="view-transfer" class="view">
+    <div class="card">
+      <label>Your temporary name<input id="displayName" maxlength="24" autocomplete="off" placeholder="Pick a name for this transfer"></label>
+      <div class="btn-row">
+        <button class="btn small" type="button" id="randomNameBtn">Random name</button>
+      </div>
+      <p class="fine">Shown to the other side so they know who the transfer is from. It is not an account. It lives only on this device, and you can change it any time.</p>
+      <div class="tabs" role="tablist">
+        <button id="tabSend" class="tab active" role="tab">Send</button>
+        <button id="tabReceive" class="tab" role="tab">Receive</button>
+      </div>
+
+      <form id="sendForm">
+        <label>Title<input id="sendTitle" maxlength="120" placeholder="Short title, so the other side knows what this is"></label>
+        <label>Message<textarea id="sendMessage" rows="4" placeholder="Write the message. It travels direct, device to device."></textarea></label>
+        <label>Files, optional <span class="muted">(up to 5, 10 MB each)</span><input id="sendFiles" type="file" multiple></label>
+        <p class="hint">Or drop files anywhere on this form.</p>
+        <div class="privacy-note"><strong>Privacy check.</strong> Every file is inspected on this device before sending. Supported metadata, like location, camera details, dates, and tags, is removed. Your original file is never changed. Only the cleaned copy is sent, and both sides see the result.</div>
+        <ul id="sendFileList" class="file-list"></ul>
+        <p id="sendError" class="error" hidden></p>
+        <details>
+          <summary class="muted">Connection settings</summary>
+          <label>STUN server<input id="stunUrl" type="text" value="stun:stun.l.google.com:19302"></label>
+          <p class="hint">STUN only helps the two devices find a route. It sees no content.</p>
+          <label>Relay (TURN) server, optional<input id="turnUrl" type="text" placeholder="turn:relay.example.com:3478"></label>
+          <label>Relay username<input id="turnUser" type="text" autocomplete="off"></label>
+          <label>Relay password<input id="turnPass" type="password" autocomplete="off"></label>
+          <p class="hint">A relay is only used when a direct route fails. Relay traffic costs bandwidth on whoever runs the relay.</p>
+        </details>
+        <button class="btn primary" type="submit">Create transfer code</button>
+      </form>
+
+      <form id="receiveForm" hidden>
+        <label>Transfer code<textarea id="joinCode" class="code" rows="4" placeholder="Paste the sender's transfer code here"></textarea></label>
+        <p id="joinPreview" class="fine" hidden></p>
+        <div class="btn-row">
+          <button class="btn" type="button" id="scanCameraBtn">Scan QR with camera</button>
+          <button class="btn" type="button" id="scanFileBtn">Upload QR image</button>
+          <input id="scanFileInput" type="file" accept="image/*" hidden>
+        </div>
+        <div id="scanBox" class="scan-box" hidden>
+          <video id="scanVideo" playsinline muted></video>
+          <div class="btn-row"><button class="btn small" type="button" id="scanStopBtn">Stop camera</button></div>
+          <p class="hint">Point the camera at the sender's QR code.</p>
+        </div>
+        <p id="scanNote" class="fine" hidden></p>
+        <p id="joinError" class="error" hidden></p>
+        <button class="btn primary" type="submit">Create answer code</button>
+      </form>
+    </div>
+
+    <div class="card" id="codeCard" hidden>
+      <h3 id="codeTitle">Your transfer code</h3>
+      <p class="muted">Room <span id="roomLabel" class="verify-code"></span></p>
+      <p id="codeStatus" class="ok"></p>
+      <label><span id="codeOutLabel">Code</span><textarea id="codeOut" class="code" readonly></textarea></label>
+      <div class="btn-row">
+        <button class="btn primary" type="button" id="copyCodeBtn">Copy code</button>
+      </div>
+      <span id="linkOutLabel">Invite link</span>
+      <div class="invite-chip"><span id="linkNick" class="invite-nick"></span></div>
+      <div class="btn-row">
+        <button class="btn primary" type="button" id="shareLinkBtn">Share invite</button>
+        <button class="btn" type="button" id="copyLinkBtn">Copy link</button>
+        <button class="btn" type="button" id="showLinkBtn">Show link</button>
+      </div>
+      <textarea id="linkOut" class="code" rows="3" readonly hidden></textarea>
+      <p class="hint" id="linkHint"></p>
+      <p class="hint">This code carries the connection details. It expires 10 minutes after it was made.</p>
+      <p class="fine">Or scan this QR code</p>
+      <div class="qr-wrap"><img id="qrImg" alt="Transfer QR code"></div>
+      <p id="qrNote" class="fine" hidden></p>
+      <div id="answerBox" hidden>
+        <label>Paste the other side's answer code<textarea id="answerIn" class="code" rows="4" placeholder="Paste the answer code here"></textarea></label>
+        <p id="answerPreview" class="fine" hidden></p>
+        <p id="answerError" class="error" hidden></p>
+        <button class="btn primary" type="button" id="connectAnswerBtn">Connect with answer</button>
+      </div>
+    </div>
+
+    <div class="card" id="sessionCard" hidden>
+      <h3>Transfer</h3>
+      <p id="sessionStatus" class="status-line">Not connected.</p>
+      <p id="nextSteps" class="fine" hidden></p>
+      <p id="routeLine" class="fine" hidden></p>
+      <div id="verifyBox" hidden>
+        <p>Verify code. Both sides must see the same code. Say it out loud or compare it on a call before you accept anything.</p>
+        <p class="verify-code" id="verifyCode"></p>
+      </div>
+      <div id="manifestBox" hidden>
+        <h3 id="manifestTitle"></h3>
+        <p id="manifestFrom" class="fine"></p>
+        <p id="manifestMessage" class="message-text"></p>
+        <ul id="manifestFiles" class="file-list"></ul>
+        <div class="btn-row">
+          <button class="btn primary" type="button" id="acceptBtn">Accept transfer</button>
+          <button class="btn danger" type="button" id="declineBtn">Decline</button>
+        </div>
+      </div>
+      <div class="progress" id="progressWrap" hidden><div id="progressBar"></div></div>
+      <p id="progressText" class="muted"></p>
+      <div class="btn-row"><button class="btn" type="button" id="pauseBtn" hidden>Pause</button></div>
+      <div id="privacyBox" hidden>
+        <h3>Privacy</h3>
+        <ul id="privacyList" class="file-list"></ul>
+      </div>
+      <div id="receivedBox" hidden>
+        <h3>Received</h3>
+        <p id="receivedMessage" class="message-text"></p>
+        <ul id="receivedFiles" class="file-list"></ul>
+      </div>
+      <div id="chatBox" hidden>
+        <h3>Chat</h3>
+        <ul id="chatLog" class="chat-log"></ul>
+        <div class="chat-row">
+          <input id="chatInput" type="text" maxlength="2000" placeholder="Message the other side" autocomplete="off">
+          <button class="btn primary" type="button" id="chatSendBtn">Send</button>
+        </div>
+        <p class="fine">Chat lives only while you are connected. It is never saved anywhere.</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn danger" type="button" id="cancelBtn">End transfer</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-history" class="view" hidden>
+    <div class="card">
+      <div class="card-head"><h2>History</h2><button class="btn small danger" type="button" id="clearHistoryBtn">Clear history</button></div>
+      <p class="fine">Kept on this device only. No message content, no file content, no dates. Search runs here and nothing you type is saved.</p>
+      <label class="check"><input id="historyToggle" type="checkbox" checked> Keep transfer history on this device</label>
+      <label>Search<input id="searchHistory" type="search" placeholder="Search by title, file name, or status" autocomplete="off"></label>
+      <ul id="historyList" class="plain-list"></ul>
+      <p id="historyEmpty" class="muted">No transfers yet.</p>
+    </div>
+  </section>
+
+  <section id="view-help" class="view" hidden>
+    <div class="card">
+      <h2>How it works</h2>
+      <ol>
+        <li>The sender creates a transfer and gets a code and a QR code.</li>
+        <li>Your temporary name travels with your code, so the other side sees who the transfer is from before they accept. It is not an account, it lives only on this device, and you can change it any time.</li>
+        <li>Or send the invite link instead of the code. The link carries the same details, plus your name, so the other side sees who invited them. It opens as a link where this page is hosted or saved at the same address. Anywhere else, paste the link into the code box and it works the same. The sender gets an answer link back the same way. The link is shared under your temporary name, so what people see is your name, not the long code string. The raw link stays one tap away under Show link.</li>
+        <li>The receiver enters the code, or scans the QR, and gets an answer code and QR back.</li>
+        <li>The sender enters the answer code. The two devices connect directly.</li>
+        <li>Both sides see the same verify code. Check it matches before accepting.</li>
+        <li>The receiver reviews what is being sent, then accepts. Files stream direct, with progress and a hash check at the end.</li>
+        <li>Before anything is sent, every file goes through the Privacy Engine on the sender's device. It inspects the file and removes supported metadata, like GPS location, camera details, dates, and tags, from a copy. The original file is never changed. Only the cleaned copy is sent, and both sides see a Privacy report saying what was removed.</li>
+        <li>While you are connected, you can chat in the Transfer card, under the transfer. Chat travels encrypted on the same connection, it is never saved, and it is gone when the transfer ends.</li>
+        <li>The sender can pause and resume a send while it is moving.</li>
+        <li>When it finishes, or times out, the connection closes. Nothing waits anywhere. If the other side disconnects first, start again.</li>
+        <li>Testing on one phone: this app can be both sides. Use Send to send and Receive to receive, and switch between the tabs to pass the codes back and forth.</li>
+      </ol>
+      <h3>What it does not do</h3>
+      <ul>
+        <li>It does not store anything on a server. There is no inbox and no central file storage in this version.</li>
+        <li>It does not work while one side is offline. Both devices must be online during the transfer.</li>
+        <li>It does not show who is online. With no server, the only way to know the other side is there is to connect. A code made minutes ago means they were online recently. A live online list needs the signaling service, the next step.</li>
+        <li>It does not give you a short code. With no server, the code has to carry the whole connection offer, so it is long. QR makes it painless when you are together. A short code needs the signaling service, which is the next step.</li>
+        <li>It does not hide that a transfer happened from the network path. The content is encrypted, twice: once by the connection itself, once by the app with a key only the two devices share.</li>
+        <li>Scrubbing removes embedded metadata only. It cannot remove what is visible inside a file, like a face, a street sign, an address, or words in a photo or screenshot. It also does not hide your network address from the connection itself.</li>
+        <li>Some formats cannot be scrubbed yet, like PDF, DOCX, ZIP, and HEIC. Files in those formats are labeled Not scrubbed on both sides, never marked clean. Scrubbing covers JPEG, PNG, WebP, GIF, MP3, WAV, and MP4 / MOV.</li>
+      </ul>
+      <h3>Limits</h3>
+      <ul>
+        <li>Codes expire 10 minutes after they are made.</li>
+        <li>Files: up to 5 per transfer, 10 MB each.</li>
+        <li>Open this page over localhost or HTTPS. Encryption and camera scanning need a secure page.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="foot"><span>D.DROP P2P 1.0</span><span>Direct, device to device. Nothing stored centrally.</span></footer>
+<div id="toast" class="toast" role="status" hidden></div>
+<script>
+/* qrcode-generator 1.4.4, MIT License, (c) Kazuhiko Arase. Vendored
+   into this file so QR codes work offline with no network fetch. */
+/**
+ * Minified by jsDelivr using Terser v5.37.0.
+ * Original file: /npm/qrcode-generator@1.4.4/qrcode.js
+ *
+ * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
+ */
+var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,(function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1}))},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}((function(){return qrcode}));
+//# sourceMappingURL=/sm/26b4b0d0b1e283d6b3ec9857ac597d7a60c76ac17be1ef4c965f03086de426bb.map
+</script>
+<script id="app">
+'use strict';
+/* D.DROP P2P v1. Live device-to-device transfer over WebRTC DataChannel.
+   No server, no inbox, nothing stored centrally. The transfer code
+   carries the connection offer, so it is long. QR makes it painless
+   when you are together, copy and paste works when you are apart.
+   Short codes need a signaling service, which is the next step, not
+   this file. Transport is encrypted by the connection itself, and
+   the app adds its own layer: an ECDH shared key, AES-GCM on every
+   message and file chunk, and a verify code both sides must match. */
+const $ = (id) => document.getElementById(id);
+const CHUNK = 16 * 1024;
+const CODE_TTL_MS = 10 * 60 * 1000;
+const MAX_FILES = 5;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const ROOM_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+/* ---------- sessions: one phone can be both sides ---------- */
+/* The sender side and the receiver side each keep their own connection, */
+/* keys, files, and progress, so a transfer can finish on one phone by */
+/* switching between the Send and Receive tabs. The page shows the side */
+/* you are looking at; the other side keeps running in the background. */
+function newSession(role) {
+  return {
+    role, pc: null, dc: null, ecdh: null, aesKey: null,
+    fingerprint: '', room: '', title: '', message: '',
+    ownName: '', peerName: '',
+    link: '', chat: [], chatOpen: false, paused: false, route: '', startedAt: 0,
+    files: [], manifest: null, recvFiles: [],
+    totalBytes: 0, sentBytes: 0, accepted: false, done: false,
+    code: '', codeTitle: '', codeStatus: '', qrSrc: '', qrNote: '',
+    started: false, status: 'Not connected.', next: '',
+    manifestReady: false, receivedReady: false,
+    progressShown: false, progressPct: 0, progressText: '',
+  };
+}
+const SS = newSession('send');
+const SR = newSession('receive');
+let S = SS; /* the session currently shown on screen */
+
+function renderReceivedList(sess) {
+  const ul = $('receivedFiles');
+  ul.innerHTML = '';
+  $('receivedMessage').textContent = sess.manifest ? (sess.manifest.message || '(No message.)') : '';
+  for (const f of sess.recvFiles) {
+    const li = document.createElement('li');
+    const name = document.createElement('span');
+    name.textContent = f.name + ' (' + fmtBytes(f.size) + ') ' + (f.ok ? 'hash OK' : 'HASH MISMATCH');
+    li.appendChild(name);
+    if (f.ok && f.blobUrl) {
+      const a = document.createElement('a');
+      a.href = f.blobUrl;
+      a.download = f.name;
+      a.textContent = 'Download';
+      a.className = 'btn small';
+      a.style.marginLeft = '8px';
+      li.appendChild(a);
+      if ((f.type || '').indexOf('image/') === 0) {
+        const img = document.createElement('img');
+        img.src = f.blobUrl;
+        img.alt = f.name;
+        img.className = 'received-img';
+        li.appendChild(img);
+      }
+    }
+    ul.appendChild(li);
+  }
+}
+function renderCodeCard(sess) {
+  $('codeCard').hidden = !sess.code;
+  if (!sess.code) return;
+  $('codeTitle').textContent = sess.codeTitle;
+  $('codeOutLabel').textContent = sess.codeTitle;
+  $('roomLabel').textContent = sess.room;
+  $('codeStatus').textContent = sess.codeStatus;
+  $('codeOut').value = sess.code;
+  $('linkOut').value = sess.link || '';
+  $('linkOutLabel').textContent = sess.role === 'send' ? 'Invite link' : 'Answer link';
+  const nickName = sess.ownName || displayName();
+  $('linkNick').textContent = nickName + (sess.role === 'send' ? "'s D.DROP invite" : "'s D.DROP answer");
+  $('shareLinkBtn').textContent = sess.role === 'send' ? 'Share invite' : 'Share answer';
+  $('shareLinkBtn').hidden = !navigator.share;
+  let hint = sess.role === 'send'
+    ? 'Share it under your name. The other side sees ' + nickName + ', not a wall of code.'
+    : 'Share it under your name. The sender opens it in the page where they made the invite, or pastes it into their answer box.';
+  if (location.protocol === 'file:') hint += ' Note: this page is a file on this device, so for now the link only opens on this device. Until the page is hosted, the code and the QR travel anywhere.';
+  $('linkHint').textContent = hint;
+  if (sess.qrSrc) $('qrImg').src = sess.qrSrc;
+  else $('qrImg').removeAttribute('src');
+  if (sess.qrNote) {
+    $('qrNote').textContent = sess.qrNote;
+    $('qrNote').hidden = false;
+  } else {
+    $('qrNote').hidden = true;
+  }
+  $('answerBox').hidden = sess.role !== 'send';
+}
+function renderSession(sess) {
+  $('sessionCard').hidden = !sess.started;
+  if (!sess.started) return;
+  $('sessionStatus').textContent = sess.status;
+  $('nextSteps').textContent = sess.next;
+  $('nextSteps').hidden = !sess.next;
+  $('routeLine').textContent = sess.route ? 'Route: ' + sess.route : '';
+  $('routeLine').hidden = !sess.route;
+  if (sess.fingerprint) {
+    $('verifyCode').textContent = sess.fingerprint.toUpperCase();
+    $('verifyBox').hidden = false;
+  } else {
+    $('verifyBox').hidden = true;
+  }
+  if (sess.manifestReady && sess.manifest) {
+    $('manifestTitle').textContent = sess.manifest.title || 'Transfer';
+    $('manifestFrom').textContent = sess.manifest.from ? 'From: ' + sess.manifest.from : '';
+    $('manifestMessage').textContent = sess.manifest.message || '(No message.)';
+    const ul = $('manifestFiles');
+    ul.innerHTML = '';
+    sess.manifest.files.forEach((f) => {
+      const li = document.createElement('li');
+      li.textContent = f.name + ' (' + fmtBytes(f.size) + ')';
+      ul.appendChild(li);
+    });
+    $('manifestBox').hidden = false;
+  } else {
+    $('manifestBox').hidden = true;
+  }
+  if (sess.receivedReady) {
+    renderReceivedList(sess);
+    $('receivedBox').hidden = false;
+  } else {
+    $('receivedBox').hidden = true;
+  }
+  $('progressWrap').hidden = !sess.progressShown;
+  $('progressBar').style.width = sess.progressPct + '%';
+  $('progressText').textContent = sess.progressText;
+  $('pauseBtn').hidden = !(sess.role === 'send' && !sess.done && (sess.chatOpen || sess.progressShown));
+  const privSrc = sess.role === 'send' ? sess.files : (sess.manifest && sess.manifest.files ? sess.manifest.files : []);
+  const privList = $('privacyList');
+  privList.innerHTML = '';
+  let privShown = false;
+  privSrc.forEach((f) => {
+    if (!f.privacy) return;
+    privShown = true;
+    const li = document.createElement('li');
+    li.textContent = f.name + ': ' + privacyLine(f.privacy);
+    privList.appendChild(li);
+  });
+  $('privacyBox').hidden = !privShown;
+  $('pauseBtn').textContent = sess.paused ? 'Resume' : 'Pause';
+  $('chatBox').hidden = !sess.chatOpen;
+  if (sess.chatOpen) renderChatLog(sess);
+}
+function renderChatLog(sess) {
+  const ul = $('chatLog');
+  ul.innerHTML = '';
+  for (const m of sess.chat) {
+    const li = document.createElement('li');
+    if (m.who === 'me') li.className = 'me';
+    const who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = m.who === 'me' ? 'You' : (m.name || 'Other side');
+    const body = document.createElement('span');
+    body.textContent = m.text;
+    li.appendChild(who);
+    li.appendChild(body);
+    ul.appendChild(li);
+  }
+  ul.scrollTop = ul.scrollHeight;
+}
+function renderActive() {
+  renderCodeCard(S);
+  renderSession(S);
+}
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.hidden = true; }, 4500);
+}
+function showError(id, msg) {
+  const el = $(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.hidden = false;
+}
+function hideError(id) {
+  const el = $(id);
+  if (el) el.hidden = true;
+}
+function fmtBytes(n) {
+  if (!n) return '0 B';
+  const u = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  let v = n;
+  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+  return (v >= 100 ? Math.round(v) : v.toFixed(1)) + ' ' + u[i];
+}
+function randomRoom() {
+  let s = '';
+  const r = crypto.getRandomValues(new Uint8Array(6));
+  for (let i = 0; i < 6; i++) s += ROOM_ALPHABET[r[i] % ROOM_ALPHABET.length];
+  return s;
+}
+
+/* ---------- temporary name: a handle, not an account ---------- */
+const NAME_KEY = 'ddrop-p2p-name';
+const NAME_ADJ = ['Swift', 'Quiet', 'Bold', 'Calm', 'Bright', 'Brave', 'Clever', 'Gentle', 'Happy', 'Lucky', 'Noble', 'Rapid', 'Silent', 'Solar', 'Steady', 'Wild', 'Wise', 'Amber', 'Copper', 'Frost', 'Harbor', 'Iron', 'Jade', 'Maple', 'Ocean', 'River', 'Stone', 'Velvet', 'Winter'];
+const NAME_NOUN = ['Fox', 'Hawk', 'Wolf', 'Bear', 'Owl', 'River', 'Pine', 'Star', 'Moon', 'Wave', 'Falcon', 'Otter', 'Lynx', 'Eagle', 'Heron', 'Bison', 'Cedar', 'Comet', 'Delta', 'Ember', 'Flint', 'Grove', 'Haven', 'Iris', 'Juniper', 'Kestrel', 'Lark', 'Meadow'];
+function randomName() {
+  const r = crypto.getRandomValues(new Uint8Array(3));
+  return NAME_ADJ[r[0] % NAME_ADJ.length] + NAME_NOUN[r[1] % NAME_NOUN.length] + (10 + (r[2] % 90));
+}
+function displayName() {
+  let n = ($('displayName').value || '').trim();
+  if (!n) {
+    n = randomName();
+    $('displayName').value = n;
+    try { localStorage.setItem(NAME_KEY, n); } catch (e) {}
+  }
+  return n;
+}
+function codeAgeText(obj) {
+  if (!obj.exp) return '';
+  const remaining = obj.exp - Date.now();
+  if (remaining <= 0) return 'expired';
+  const madeAgo = Math.max(0, Math.round((CODE_TTL_MS - remaining) / 60000));
+  const left = Math.max(1, Math.round(remaining / 60000));
+  return 'made ' + (madeAgo === 0 ? 'just now' : madeAgo + ' min ago') + ', expires in ' + left + ' min';
+}
+function updateJoinPreview() {
+  const el = $('joinPreview');
+  try {
+    const obj = parseCode($('joinCode').value);
+    if (obj.t !== 'offer') throw new Error('not an offer');
+    const age = codeAgeText(obj);
+    el.textContent = 'From ' + (obj.from || 'unknown') + ', room ' + obj.room + (age ? '. ' + age + '.' : '.');
+    el.hidden = false;
+  } catch (e) {
+    el.hidden = true;
+  }
+}
+function updateAnswerPreview() {
+  const el = $('answerPreview');
+  try {
+    const obj = parseCode($('answerIn').value);
+    if (obj.t !== 'answer') throw new Error('not an answer');
+    const age = codeAgeText(obj);
+    el.textContent = 'Answer from ' + (obj.from || 'unknown') + ', room ' + obj.room + (age ? '. ' + age + '.' : '.');
+    el.hidden = false;
+  } catch (e) {
+    el.hidden = true;
+  }
+}
+async function sha256hex(buf) {
+  const h = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+function b64urlEncode(buf) {
+  const b = new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlDecode(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  const bin = atob(str);
+  const b = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+  return b.buffer;
+}
+
+/* ================= D.DROP Privacy Engine =================
+   Format-aware metadata inspection and sanitization, on this device.
+   Every file is inspected before it is sent. Supported metadata is
+   removed from a copy; the original is never touched. The output is
+   re-inspected to verify. Formats that cannot be scrubbed are
+   disclosed as not scrubbed, never claimed clean.
+   Self-contained: pure byte work, no DOM. It can be lifted out into
+   ddrop-privacy-engine.js unchanged.
+*/
+function pvU8(buf) { return buf instanceof Uint8Array ? buf : new Uint8Array(buf); }
+function pvAscii(bytes, at, len) {
+  let s = '';
+  for (let i = 0; i < len && at + i < bytes.length; i++) s += String.fromCharCode(bytes[at + i]);
+  return s;
+}
+function pvU16be(b, o) { return (b[o] << 8) | b[o + 1]; }
+function pvU32be(b, o) { return ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0; }
+function pvU32le(b, o) { return ((b[o + 3] << 24) | (b[o + 2] << 16) | (b[o + 1] << 8) | b[o]) >>> 0; }
+function pvConcat(parts) {
+  let total = 0;
+  for (const p of parts) total += p.length;
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const p of parts) { out.set(p, at); at += p.length; }
+  return out;
+}
+function pvDetect(b) {
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'jpeg';
+  if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'png';
+  if (b.length >= 12 && pvAscii(b, 0, 4) === 'RIFF' && pvAscii(b, 8, 4) === 'WEBP') return 'webp';
+  if (b.length >= 12 && pvAscii(b, 0, 4) === 'RIFF' && pvAscii(b, 8, 4) === 'WAVE') return 'wav';
+  if (b.length >= 6 && pvAscii(b, 0, 4) === 'GIF8') return 'gif';
+  if (b.length >= 3 && pvAscii(b, 0, 3) === 'ID3') return 'mp3';
+  if (b.length >= 2 && b[0] === 0xff && (b[1] & 0xe0) === 0xe0) return 'mp3';
+  if (b.length >= 8 && pvAscii(b, 4, 4) === 'ftyp') {
+    const brand = pvAscii(b, 8, 4);
+    if (brand.indexOf('hei') === 0 || brand === 'mif1' || brand === 'msf1') return 'heic';
+    return 'mp4';
+  }
+  if (b.length >= 4 && pvAscii(b, 0, 4) === '%PDF') return 'pdf';
+  if (b.length >= 4 && b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04) return 'zip';
+  return 'unknown';
+}
+function pvCountExif(tiff) {
+  const labels = new Set();
+  let count = 0;
+  try {
+    if (!tiff || tiff.length < 8) return { count: 0, labels: [] };
+    const le = tiff[0] === 0x49 && tiff[1] === 0x49;
+    const u16 = (o) => (o + 2 <= tiff.length) ? (le ? (tiff[o] | (tiff[o + 1] << 8)) : ((tiff[o] << 8) | tiff[o + 1])) : 0;
+    const u32 = (o) => (o + 4 <= tiff.length) ? (le ? pvU32le(tiff, o) : pvU32be(tiff, o)) : 0;
+    if (u16(2) !== 42) return { count: 0, labels: [] };
+    const seen = new Set();
+    const walk = (off, isMain) => {
+      if (off <= 0 || off + 2 > tiff.length || seen.has(off)) return;
+      seen.add(off);
+      const n = u16(off);
+      let gpsPtr = 0, exifPtr = 0;
+      for (let i = 0; i < n; i++) {
+        const e = off + 2 + i * 12;
+        if (e + 12 > tiff.length) break;
+        const tag = u16(e);
+        count++;
+        if (isMain) {
+          if (tag === 0x010f || tag === 0x0110) labels.add('camera info');
+          if (tag === 0x0132) labels.add('date and time');
+          if (tag === 0x013b) labels.add('software');
+          if (tag === 0x8825) { labels.add('GPS coordinates'); gpsPtr = u32(e + 8); }
+          if (tag === 0x8769) exifPtr = u32(e + 8);
+        }
+      }
+      if (exifPtr) walk(exifPtr, false);
+      if (gpsPtr && gpsPtr + 2 <= tiff.length && !seen.has(gpsPtr)) {
+        seen.add(gpsPtr);
+        count += u16(gpsPtr);
+      }
+      const nextAt = off + 2 + n * 12;
+      if (nextAt + 4 <= tiff.length) {
+        const next = u32(nextAt);
+        if (next) walk(next, false);
+      }
+    };
+    walk(u32(4), true);
+  } catch (e) {}
+  return { count, labels: Array.from(labels) };
+}
+
+function pvJpegScan(b) {
+  const items = [];
+  let fields = 0;
+  let off = 2;
+  while (off + 4 <= b.length) {
+    if (b[off] !== 0xff) break;
+    const marker = b[off + 1];
+    if (marker === 0xda || marker === 0xd9) break;
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd8)) { off += 2; continue; }
+    const len = pvU16be(b, off + 2);
+    if (len < 2 || off + 2 + len > b.length) break;
+    const dataAt = off + 4;
+    if (marker === 0xe1) {
+      if (pvAscii(b, dataAt, 6) === 'Exif\0\0') {
+        const ex = pvCountExif(b.subarray(dataAt + 6, off + 2 + len));
+        fields += Math.max(ex.count, 1);
+        items.push({ label: 'EXIF' + (ex.labels.length ? ' (' + ex.labels.join(', ') + ')' : '') });
+      } else if (pvAscii(b, dataAt, 28) === 'http://ns.adobe.com/xap/1.0/') {
+        fields += 1;
+        items.push({ label: 'XMP' });
+      } else {
+        fields += 1;
+        items.push({ label: 'APP1 data' });
+      }
+    } else if (marker === 0xed) { fields += 1; items.push({ label: 'IPTC (Photoshop)' }); }
+    else if (marker === 0xec) { fields += 1; items.push({ label: 'Photoshop data' }); }
+    else if (marker === 0xfe) { fields += 1; items.push({ label: 'Comment' }); }
+    off += 2 + len;
+  }
+  return { items, fields };
+}
+function pvJpegScrub(b) {
+  const parts = [b.subarray(0, 2)];
+  let off = 2;
+  while (off + 4 <= b.length) {
+    if (b[off] !== 0xff) break;
+    const marker = b[off + 1];
+    if (marker === 0xda) { parts.push(b.subarray(off)); return pvConcat(parts); }
+    if (marker === 0xd9) { parts.push(b.subarray(off, off + 2)); return pvConcat(parts); }
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd8)) { parts.push(b.subarray(off, off + 2)); off += 2; continue; }
+    const len = pvU16be(b, off + 2);
+    if (len < 2 || off + 2 + len > b.length) break;
+    const drop = marker === 0xe1 || marker === 0xed || marker === 0xec || marker === 0xfe;
+    if (!drop) parts.push(b.subarray(off, off + 2 + len));
+    off += 2 + len;
+  }
+  parts.push(b.subarray(off));
+  return pvConcat(parts);
+}
+const PV_PNG_DROP = { tEXt: 1, zTXt: 1, iTXt: 1, tIME: 1, eXIf: 1 };
+function pvPngWalk(b, fn) {
+  let off = 8;
+  while (off + 8 <= b.length) {
+    const len = pvU32be(b, off);
+    const type = pvAscii(b, off + 4, 4);
+    if (off + 12 + len > b.length) break;
+    fn(off, len, type);
+    if (type === 'IEND') break;
+    off += 12 + len;
+  }
+}
+function pvPngScan(b) {
+  const items = [];
+  let fields = 0;
+  pvPngWalk(b, (off, len, type) => {
+    if (!PV_PNG_DROP[type]) return;
+    if (type === 'eXIf') {
+      const ex = pvCountExif(b.subarray(off + 8, off + 8 + len));
+      fields += Math.max(ex.count, 1);
+      items.push({ label: 'EXIF' + (ex.labels.length ? ' (' + ex.labels.join(', ') + ')' : '') });
+    } else if (type === 'tIME') {
+      fields += 1;
+      items.push({ label: 'Date and time (tIME)' });
+    } else {
+      fields += 1;
+      items.push({ label: 'Text data (' + type + ')' });
+    }
+  });
+  return { items, fields };
+}
+function pvPngScrub(b) {
+  const parts = [b.subarray(0, 8)];
+  pvPngWalk(b, (off, len, type) => {
+    if (!PV_PNG_DROP[type]) parts.push(b.subarray(off, off + 12 + len));
+  });
+  return pvConcat(parts);
+}
+function pvWebpScan(b) {
+  const items = [];
+  let fields = 0;
+  let off = 12;
+  while (off + 8 <= b.length) {
+    const type = pvAscii(b, off, 4);
+    const len = pvU32le(b, off + 4);
+    if (off + 8 + len > b.length) break;
+    if (type === 'EXIF') { fields += 1; items.push({ label: 'EXIF' }); }
+    if (type === 'XMP ') { fields += 1; items.push({ label: 'XMP' }); }
+    off += 8 + len + (len % 2);
+  }
+  return { items, fields };
+}
+function pvWebpScrub(b) {
+  const parts = [b.subarray(0, 12).slice()];
+  let off = 12;
+  while (off + 8 <= b.length) {
+    const type = pvAscii(b, off, 4);
+    const len = pvU32le(b, off + 4);
+    if (off + 8 + len > b.length) { parts.push(b.subarray(off)); break; }
+    if (type !== 'EXIF' && type !== 'XMP ') {
+      let chunk = b.subarray(off, off + 8 + len + (len % 2));
+      if (type === 'VP8X' && len >= 1) {
+        chunk = chunk.slice();
+        chunk[8] = chunk[8] & ~0x08 & ~0x04;
+      }
+      parts.push(chunk);
+    }
+    off += 8 + len + (len % 2);
+  }
+  const out = pvConcat(parts);
+  const size = out.length - 8;
+  out[4] = size & 0xff; out[5] = (size >> 8) & 0xff; out[6] = (size >> 16) & 0xff; out[7] = (size >> 24) & 0xff;
+  return out;
+}
+function pvGifBlocks(b) {
+  const out = [];
+  let off = 13;
+  if (b.length < 14) return out;
+  const packed = b[10];
+  if (packed & 0x80) off += 3 * Math.pow(2, (packed & 0x07) + 1);
+  const subBlocks = (at) => {
+    let p = at;
+    while (p < b.length) {
+      const n = b[p];
+      p += 1 + n;
+      if (n === 0) break;
+    }
+    return p;
+  };
+  while (off < b.length) {
+    const introducer = b[off];
+    if (introducer === 0x3b) { out.push({ at: off, end: off + 1, kind: 'trailer' }); break; }
+    if (introducer === 0x21) {
+      const label = b[off + 1];
+      if (label === 0xfe) {
+        const end = subBlocks(off + 2);
+        out.push({ at: off, end, kind: 'drop', label: 'Comment' });
+        off = end;
+      } else if (label === 0x01) {
+        const end = subBlocks(off + 3 + b[off + 2]);
+        out.push({ at: off, end, kind: 'drop', label: 'Plain text' });
+        off = end;
+      } else if (label === 0xff) {
+        const appId = pvAscii(b, off + 3, 11);
+        const end = subBlocks(off + 3 + b[off + 2]);
+        if (appId.indexOf('XMP Data') === 0) out.push({ at: off, end, kind: 'drop', label: 'XMP' });
+        else out.push({ at: off, end, kind: 'keep' });
+        off = end;
+      } else {
+        const end = subBlocks(off + 2);
+        out.push({ at: off, end, kind: 'keep' });
+        off = end;
+      }
+      continue;
+    }
+    if (introducer === 0x2c) {
+      let p = off + 10;
+      const ipacked = b[off + 9];
+      if (ipacked & 0x80) p += 3 * Math.pow(2, (ipacked & 0x07) + 1);
+      p += 1;
+      const end = subBlocks(p);
+      out.push({ at: off, end, kind: 'keep' });
+      off = end;
+      continue;
+    }
+    break;
+  }
+  return out;
+}
+function pvGifScan(b) {
+  const items = [];
+  for (const blk of pvGifBlocks(b)) if (blk.kind === 'drop') items.push({ label: blk.label });
+  return { items, fields: items.length };
+}
+function pvGifScrub(b) {
+  const blocks = pvGifBlocks(b);
+  if (!blocks.length) return b.slice();
+  const parts = [b.subarray(0, blocks[0].at)];
+  for (const blk of blocks) {
+    if (blk.kind !== 'drop') parts.push(b.subarray(blk.at, blk.end));
+  }
+  return pvConcat(parts);
+}
+
+function pvSyncSafe(b, o) {
+  return ((b[o] & 0x7f) << 21) | ((b[o + 1] & 0x7f) << 14) | ((b[o + 2] & 0x7f) << 7) | (b[o + 3] & 0x7f);
+}
+function pvId3v2(b) {
+  if (b.length < 10 || pvAscii(b, 0, 3) !== 'ID3') return null;
+  const major = b[3];
+  const flags = b[5];
+  const size = pvSyncSafe(b, 6);
+  const total = 10 + size + ((flags & 0x10) ? 10 : 0);
+  const frames = [];
+  let off = 10;
+  if ((flags & 0x40) && major === 3 && off + 4 <= b.length) off += 4 + pvU32be(b, off);
+  else if ((flags & 0x40) && major === 4 && off + 4 <= b.length) off += pvSyncSafe(b, off);
+  while (off + 10 <= 10 + size && off + 10 <= b.length) {
+    const id = pvAscii(b, off, 4);
+    if (!/^[A-Z0-9]{4}$/.test(id)) break;
+    const fsize = major === 4 ? pvSyncSafe(b, off + 4) : pvU32be(b, off + 4);
+    frames.push(id);
+    off += 10 + fsize;
+  }
+  return { total, frames };
+}
+function pvMp3Scan(b) {
+  const items = [];
+  let fields = 0;
+  const v2 = pvId3v2(b);
+  if (v2) { fields += v2.frames.length; items.push({ label: 'ID3 tags (' + v2.frames.join(', ') + ')' }); }
+  if (b.length >= 128 && pvAscii(b, b.length - 128, 3) === 'TAG') { fields += 1; items.push({ label: 'ID3v1 tag' }); }
+  return { items, fields };
+}
+function pvMp3Scrub(b) {
+  let start = 0;
+  const v2 = pvId3v2(b);
+  if (v2) start = v2.total;
+  let end = b.length;
+  if (end - start >= 128 && pvAscii(b, end - 128, 3) === 'TAG') end -= 128;
+  return b.subarray(start, end).slice();
+}
+function pvWavScan(b) {
+  const items = [];
+  let fields = 0;
+  let off = 12;
+  while (off + 8 <= b.length) {
+    const type = pvAscii(b, off, 4);
+    const len = pvU32le(b, off + 4);
+    if (off + 8 + len > b.length) break;
+    if (type === 'LIST') {
+      let n = 0;
+      if (pvAscii(b, off + 8, 4) === 'INFO') {
+        let p = off + 12;
+        const end = off + 8 + len;
+        while (p + 8 <= end) { const sl = pvU32le(b, p + 4); n++; p += 8 + sl + (sl % 2); }
+      }
+      fields += Math.max(n, 1);
+      items.push({ label: 'Info tags (LIST)' });
+    } else if (type === 'bext') {
+      fields += 1;
+      items.push({ label: 'Broadcast data (bext)' });
+    }
+    off += 8 + len + (len % 2);
+  }
+  return { items, fields };
+}
+function pvWavScrub(b) {
+  const parts = [b.subarray(0, 12).slice()];
+  let off = 12;
+  while (off + 8 <= b.length) {
+    const type = pvAscii(b, off, 4);
+    const len = pvU32le(b, off + 4);
+    if (off + 8 + len > b.length) { parts.push(b.subarray(off)); break; }
+    if (type !== 'LIST' && type !== 'bext') parts.push(b.subarray(off, off + 8 + len + (len % 2)));
+    off += 8 + len + (len % 2);
+  }
+  const out = pvConcat(parts);
+  const size = out.length - 8;
+  out[4] = size & 0xff; out[5] = (size >> 8) & 0xff; out[6] = (size >> 16) & 0xff; out[7] = (size >> 24) & 0xff;
+  return out;
+}
+function pvMp4Boxes(b, start, end) {
+  const boxes = [];
+  let off = start;
+  while (off + 8 <= end) {
+    let size = pvU32be(b, off);
+    const type = pvAscii(b, off + 4, 4);
+    let header = 8;
+    if (size === 1) { size = pvU32be(b, off + 12); header = 16; }
+    else if (size === 0) size = end - off;
+    if (size < header || off + size > end) break;
+    boxes.push({ type, at: off, size, header });
+    off += size;
+  }
+  return boxes;
+}
+function pvMp4TimeLabels(b, box, name, items) {
+  const c = box.at + box.header;
+  if (c + 12 <= b.length && b[c] === 0 && (pvU32be(b, c + 4) || pvU32be(b, c + 8))) {
+    items.push({ label: name + ' timestamps' });
+    return 1;
+  }
+  return 0;
+}
+function pvMp4Scan(b) {
+  const items = [];
+  let fields = 0;
+  for (const box of pvMp4Boxes(b, 0, b.length)) {
+    if (box.type === 'udta') { fields += 1; items.push({ label: 'User data (udta)' }); }
+    if (box.type === 'moov') {
+      for (const child of pvMp4Boxes(b, box.at + box.header, box.at + box.size)) {
+        if (child.type === 'udta') { fields += 1; items.push({ label: 'User data (udta)' }); }
+        else if (child.type === 'meta') { fields += 1; items.push({ label: 'Metadata (meta)' }); }
+        else if (child.type === 'mvhd') fields += pvMp4TimeLabels(b, child, 'Movie header', items);
+        else if (child.type === 'tkhd') fields += pvMp4TimeLabels(b, child, 'Track header', items);
+        else if (child.type === 'mdia') {
+          for (const g of pvMp4Boxes(b, child.at + child.header, child.at + child.size)) {
+            if (g.type === 'mdhd') fields += pvMp4TimeLabels(b, g, 'Media header', items);
+          }
+        }
+      }
+    }
+  }
+  return { items, fields };
+}
+function pvMp4Scrub(b) {
+  const work = b.slice();
+  const zeroTimes = (box) => {
+    const c = box.at + box.header;
+    if (c + 12 <= work.length && work[c] === 0) work.fill(0, c + 4, c + 12);
+  };
+  const parts = [];
+  let cursor = 0;
+  for (const box of pvMp4Boxes(work, 0, work.length)) {
+    cursor = box.at + box.size;
+    if (box.type === 'udta') continue;
+    if (box.type === 'moov') {
+      const kept = [];
+      for (const child of pvMp4Boxes(work, box.at + box.header, box.at + box.size)) {
+        if (child.type === 'udta' || child.type === 'meta') continue;
+        if (child.type === 'mvhd' || child.type === 'tkhd') zeroTimes(child);
+        if (child.type === 'mdia') {
+          for (const g of pvMp4Boxes(work, child.at + child.header, child.at + child.size)) {
+            if (g.type === 'mdhd') zeroTimes(g);
+          }
+        }
+        kept.push(child);
+      }
+      let newSize = box.header;
+      for (const child of kept) newSize += child.size;
+      const headBytes = work.subarray(box.at, box.at + box.header).slice();
+      headBytes[0] = (newSize >>> 24) & 0xff; headBytes[1] = (newSize >>> 16) & 0xff; headBytes[2] = (newSize >>> 8) & 0xff; headBytes[3] = newSize & 0xff;
+      parts.push(headBytes);
+      for (const child of kept) parts.push(work.subarray(child.at, child.at + child.size));
+    } else {
+      parts.push(work.subarray(box.at, box.at + box.size));
+    }
+  }
+  parts.push(work.subarray(cursor));
+  return pvConcat(parts);
+}
+function pvPdfScan(b) {
+  const text = pvAscii(b, 0, Math.min(b.length, 262144));
+  const found = [];
+  if (text.indexOf('/Author') >= 0) found.push('author');
+  if (text.indexOf('/Creator') >= 0) found.push('creator');
+  if (text.indexOf('/Producer') >= 0) found.push('producer');
+  if (text.indexOf('/Title') >= 0) found.push('title');
+  if (text.indexOf('/Metadata') >= 0) found.push('XMP metadata');
+  return found;
+}
+const PV_SCRUBBERS = {
+  jpeg: { scan: pvJpegScan, scrub: pvJpegScrub, name: 'JPEG' },
+  png: { scan: pvPngScan, scrub: pvPngScrub, name: 'PNG' },
+  webp: { scan: pvWebpScan, scrub: pvWebpScrub, name: 'WebP' },
+  gif: { scan: pvGifScan, scrub: pvGifScrub, name: 'GIF' },
+  mp3: { scan: pvMp3Scan, scrub: pvMp3Scrub, name: 'MP3' },
+  wav: { scan: pvWavScan, scrub: pvWavScrub, name: 'WAV' },
+  mp4: { scan: pvMp4Scan, scrub: pvMp4Scrub, name: 'MP4 / MOV' },
+};
+function privacyProcess(buf) {
+  const b = pvU8(buf);
+  const format = pvDetect(b);
+  const eng = PV_SCRUBBERS[format];
+  if (eng) {
+    const before = eng.scan(b);
+    const out = eng.scrub(b);
+    const after = eng.scan(out);
+    if (after.items.length > 0) {
+      return { buf, format: eng.name, status: 'failed', removed: 0, labels: [], note: 'Scrubbing could not be verified.' };
+    }
+    if (before.items.length > 0) {
+      return { buf: out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength), format: eng.name, status: 'sanitized', removed: before.fields, labels: before.items.map((i) => i.label), note: '' };
+    }
+    return { buf, format: eng.name, status: 'clean', removed: 0, labels: [], note: '' };
+  }
+  if (format === 'pdf') {
+    const found = pvPdfScan(b);
+    return { buf, format: 'PDF', status: 'not-scrubbed', removed: 0, labels: found, note: found.length ? 'Document properties found (' + found.join(', ') + '), but PDF scrubbing is not supported yet.' : 'PDF scrubbing is not supported yet, and no common property markers were found.' };
+  }
+  if (format === 'zip') {
+    const isDocx = pvAscii(b, 0, Math.min(b.length, 65536)).indexOf('word/') >= 0;
+    return { buf, format: isDocx ? 'DOCX' : 'ZIP', status: 'not-scrubbed', removed: 0, labels: [], note: (isDocx ? 'Author and editor data lives inside the document. ' : 'Archive data can hide in comments and attributes. ') + 'Scrubbing is not supported for this format yet.' };
+  }
+  if (format === 'heic') {
+    return { buf, format: 'HEIC', status: 'not-scrubbed', removed: 0, labels: [], note: 'HEIC scrubbing is not supported yet.' };
+  }
+  return { buf, format: 'Unknown', status: 'not-scrubbed', removed: 0, labels: [], note: 'Format not recognized. Sent unchanged.' };
+}
+function privacyLine(p) {
+  if (!p) return '';
+  if (p.status === 'sanitized') return 'Sanitized: ' + p.removed + ' metadata field' + (p.removed === 1 ? '' : 's') + ' removed' + (p.labels && p.labels.length ? ' (' + p.labels.join(', ') + ')' : '') + '.';
+  if (p.status === 'clean') return 'No embedded metadata found.';
+  if (p.status === 'failed') return 'Scrubbing failed verification.';
+  return 'Not scrubbed. ' + (p.note || '');
+}
+/* ================= end Privacy Engine ================= */
+
+/* ---------- app-level encryption: ECDH + AES-GCM ---------- */
+async function genEcdh() {
+  return crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+}
+async function exportEcdhPub(key) {
+  const j = await crypto.subtle.exportKey('jwk', key.publicKey);
+  return { x: j.x, y: j.y };
+}
+async function importEcdhPub(p) {
+  return crypto.subtle.importKey(
+    'jwk', { kty: 'EC', crv: 'P-256', x: p.x, y: p.y, ext: true },
+    { name: 'ECDH', namedCurve: 'P-256' }, true, []);
+}
+async function deriveAes(priv, pub) {
+  const bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, priv, 256);
+  const fp = await sha256hex(bits);
+  const key = await crypto.subtle.importKey('raw', bits, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  return { key, fp: fp.slice(0, 10) };
+}
+async function encJSON(sess, obj) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, sess.aesKey, new TextEncoder().encode(JSON.stringify(obj)));
+  return { iv: b64urlEncode(iv), data: b64urlEncode(data) };
+}
+async function decJSON(sess, w) {
+  const pt = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: new Uint8Array(b64urlDecode(w.iv)) }, sess.aesKey, b64urlDecode(w.data));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+/* ---------- transfer codes ---------- */
+function buildCode(obj) {
+  return 'DDROP1.' + b64urlEncode(new TextEncoder().encode(JSON.stringify(obj)));
+}
+function makeLink(kind, code) {
+  return location.href.split('#')[0] + '#' + kind + '=' + code;
+}
+function parseCode(str) {
+  str = (str || '').trim();
+  const invAt = str.indexOf('#invite=');
+  const ansAt = str.indexOf('#answer=');
+  if (invAt >= 0) str = str.slice(invAt + '#invite='.length);
+  else if (ansAt >= 0) str = str.slice(ansAt + '#answer='.length);
+  str = str.split(/\s/)[0];
+  if (!str.startsWith('DDROP1.')) throw new Error('That does not look like a D.DROP code. It should start with DDROP1.');
+  let obj;
+  try {
+    obj = JSON.parse(new TextDecoder().decode(b64urlDecode(str.slice(7))));
+  } catch (e) {
+    throw new Error('That code could not be read. Check it was copied in full.');
+  }
+  if (!obj || obj.v !== 1 || !obj.t || !obj.room || !obj.sdp || !obj.ecdh || !obj.ecdh.x || !obj.ecdh.y) {
+    throw new Error('That code is incomplete.');
+  }
+  if (obj.exp && Date.now() > obj.exp) throw new Error('That code expired. Ask the other side to make a fresh one. Codes last 10 minutes.');
+  return obj;
+}
+function showQR(imgEl, noteEl, text) {
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    imgEl.src = qr.createDataURL(4, 8);
+    if (noteEl) noteEl.hidden = true;
+    return true;
+  } catch (e) {
+    try {
+      const qr = qrcode(0, 'L');
+      qr.addData(text);
+      qr.make();
+      imgEl.src = qr.createDataURL(4, 8);
+      if (noteEl) {
+        noteEl.textContent = 'QR is using the lowest error correction because the code is long. Copy and paste also works.';
+        noteEl.hidden = false;
+      }
+      return true;
+    } catch (e2) {
+      if (noteEl) {
+        noteEl.textContent = 'This code is too long for a QR code. Copy and paste it instead.';
+        noteEl.hidden = false;
+      }
+      imgEl.removeAttribute('src');
+      return false;
+    }
+  }
+}
+
+/* ---------- connection ---------- */
+function iceServers() {
+  const list = [{ urls: ($('stunUrl').value || '').trim() || 'stun:stun.l.google.com:19302' }];
+  const t = ($('turnUrl').value || '').trim();
+  if (t) {
+    const turn = { urls: t };
+    const u = ($('turnUser').value || '').trim();
+    if (u) turn.username = u;
+    const p = $('turnPass').value;
+    if (p) turn.credential = p;
+    list.push(turn);
+  }
+  return list;
+}
+function waitIce(pc) {
+  return new Promise((resolve) => {
+    if (pc.iceGatheringState === 'complete') return resolve();
+    const done = () => {
+      pc.removeEventListener('icegatheringstatechange', onCh);
+      resolve();
+    };
+    const onCh = () => { if (pc.iceGatheringState === 'complete') done(); };
+    pc.addEventListener('icegatheringstatechange', onCh);
+    setTimeout(done, 5000);
+  });
+}
+function setStatus(sess, t) {
+  sess.status = t;
+  if (sess === S) $('sessionStatus').textContent = t;
+}
+function setNext(sess, t) {
+  sess.next = t;
+  if (sess === S) {
+    $('nextSteps').textContent = t;
+    $('nextSteps').hidden = !t;
+  }
+}
+function showVerify(sess) {
+  if (sess.fingerprint && sess === S) {
+    $('verifyCode').textContent = sess.fingerprint.toUpperCase();
+    $('verifyBox').hidden = false;
+  }
+}
+function teardown(sess) {
+  try {
+    if (sess.dc) {
+      sess.dc.onopen = null; sess.dc.onmessage = null;
+      sess.dc.onclose = null; sess.dc.onerror = null;
+      sess.dc.close();
+    }
+  } catch (e) {}
+  try {
+    if (sess.pc) {
+      sess.pc.onconnectionstatechange = null;
+      sess.pc.close();
+    }
+  } catch (e) {}
+  Object.assign(sess, newSession(sess.role));
+  if (sess === S) renderActive();
+}
+
+/* ---------- DataChannel protocol ---------- */
+function wireChannel(sess) {
+  const dc = sess.dc;
+  dc.binaryType = 'arraybuffer';
+  dc.bufferedAmountLowThreshold = 256 * 1024;
+  dc.onopen = async () => {
+    sess.chatOpen = true;
+    setStatus(sess, 'Connected direct, device to device.');
+    if (sess === S) renderSession(sess);
+    if (sess.role === 'send') {
+      setStatus(sess, 'Connected. Sending the transfer summary for the other side to review...');
+      await sendControl(sess, {
+        type: 'manifest',
+        title: sess.title,
+        message: sess.message,
+        from: sess.ownName,
+        files: sess.files.map((f) => ({ name: f.name, type: f.type, size: f.size, sha256: f.sha256, privacy: f.privacy || null })),
+        room: sess.room,
+      });
+    }
+  };
+  dc.onmessage = async (ev) => {
+    try { await onChannelMessage(sess, ev.data); }
+    catch (err) { setStatus(sess, 'Transfer failed: ' + err.message); }
+  };
+  dc.onclose = () => {
+    sess.chatOpen = false;
+    if (sess === S) renderSession(sess);
+    if (!sess.done) setStatus(sess, 'Connection closed.');
+  };
+  dc.onerror = () => { setStatus(sess, 'Connection error. Try again with a fresh code.'); };
+}
+function watchConnection(sess) {
+  sess.pc.onconnectionstatechange = () => {
+    const st = sess.pc.connectionState;
+    if (st === 'connected') {
+      if (sess.role === 'receive') setStatus(sess, 'Connected direct, device to device. Waiting for the transfer summary...');
+      detectRoute(sess, 0);
+    } else if (st === 'failed') {
+      setStatus(sess, 'Direct connection failed. The two devices could not reach each other. Try adding a relay server in Connection settings, or make fresh codes.');
+    } else if (st === 'disconnected') {
+      setStatus(sess, 'Connection lost.');
+    }
+  };
+}
+function detectRoute(sess, tries) {
+  if (!sess.pc || sess.route) return;
+  sess.pc.getStats(null).then((report) => {
+    let pair = null;
+    report.forEach((r) => {
+      if (r.type === 'candidate-pair' && (r.state === 'succeeded' || r.nominated) && r.localCandidateId) pair = r;
+    });
+    if (pair) {
+      const local = report.get(pair.localCandidateId);
+      if (local && local.candidateType) {
+        sess.route = local.candidateType === 'relay' ? 'relay (TURN)' : 'direct';
+        if (sess === S) renderSession(sess);
+        return;
+      }
+    }
+    if (tries < 3) setTimeout(() => detectRoute(sess, tries + 1), 700);
+  }).catch(() => {});
+}
+async function sendControl(sess, obj) {
+  const w = await encJSON(sess, obj);
+  sess.dc.send(JSON.stringify({ enc: w }));
+}
+async function onChannelMessage(sess, data) {
+  if (typeof data === 'string') {
+    const outer = JSON.parse(data);
+    if (!outer.enc) return;
+    const msg = await decJSON(sess, outer.enc);
+    await handleControl(sess, msg);
+    return;
+  }
+  const buf = new Uint8Array(data);
+  if (buf[0] !== 1) return;
+  const view = new DataView(data);
+  const fileIdx = view.getUint32(1);
+  const chunkIdx = view.getUint32(5);
+  const iv = buf.slice(9, 21);
+  const cipher = buf.slice(21);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, sess.aesKey, cipher);
+  const f = sess.recvFiles[fileIdx];
+  if (!f) return;
+  f.chunks.set(chunkIdx, pt);
+  f.received += pt.byteLength;
+  updateProgress(sess);
+}
+async function handleControl(sess, msg) {
+  if (msg.type === 'manifest' && sess.role === 'receive') {
+    sess.manifest = msg;
+    sess.recvFiles = msg.files.map((f) => ({ ...f, chunks: new Map(), received: 0 }));
+    sess.totalBytes = msg.files.reduce((s, f) => s + f.size, 0);
+    sess.manifestReady = true;
+    setStatus(sess, 'The sender wants to send this. Review it, check the verify code matches, then accept or decline.');
+    setNext(sess, 'Check the verify code above matches the other side, then Accept or Decline.');
+    if (sess === S) renderSession(sess);
+    else toast('The sender sent the transfer summary. Switch to Receive to review it.');
+  } else if (msg.type === 'accept' && sess.role === 'send') {
+    sess.accepted = true;
+    setStatus(sess, sess.peerName ? 'Accepted by ' + sess.peerName + '. Sending files...' : 'Accepted. Sending files...');
+    setNext(sess, '');
+    await sendFiles(sess);
+  } else if (msg.type === 'decline' && sess.role === 'send') {
+    setStatus(sess, 'The other side declined the transfer.');
+    setNext(sess, '');
+    logHistory('send', sess.title, sess.files, 'declined', sess.fingerprint, sess.peerName);
+    endSession(sess);
+  } else if (msg.type === 'done' && sess.role === 'receive') {
+    await finishReceive(sess);
+  } else if (msg.type === 'chat' && typeof msg.text === 'string' && msg.text) {
+    sess.chat.push({ who: 'peer', name: msg.from || sess.peerName || 'Other side', text: msg.text.slice(0, 2000) });
+    if (sess === S) renderSession(sess);
+    else toast('New message from ' + (sess.peerName || 'the other side') + '. Switch tabs to read it.');
+  }
+}
+function updateProgress(sess) {
+  const total = sess.totalBytes || 0;
+  const done = sess.role === 'send' ? sess.sentBytes : sess.recvFiles.reduce((s, f) => s + f.received, 0);
+  const pct = total ? Math.round((done / total) * 100) : 100;
+  sess.progressPct = pct;
+  let text = fmtBytes(done) + ' of ' + fmtBytes(total) + ' (' + pct + '%)';
+  if (sess.startedAt && done > 0 && pct < 100) {
+    const secs = (Date.now() - sess.startedAt) / 1000;
+    if (secs > 0.25) text += ' · ' + fmtBytes(Math.round(done / secs)) + '/s';
+  }
+  sess.progressText = text;
+  if (sess === S) {
+    $('progressBar').style.width = pct + '%';
+    $('progressText').textContent = sess.progressText;
+  }
+}
+async function sendFiles(sess) {
+  sess.totalBytes = sess.files.reduce((s, f) => s + f.size, 0);
+  sess.sentBytes = 0;
+  sess.startedAt = Date.now();
+  sess.progressShown = true;
+  if (sess === S) $('progressWrap').hidden = false;
+  updateProgress(sess);
+  for (let fi = 0; fi < sess.files.length; fi++) {
+    const f = sess.files[fi];
+    const totalChunks = Math.ceil(f.buf.byteLength / CHUNK);
+    for (let ci = 0; ci < totalChunks; ci++) {
+      while (sess.paused && sess.dc && sess.dc.readyState === 'open') {
+        await new Promise((res) => setTimeout(res, 150));
+      }
+      if (!sess.dc || sess.dc.readyState !== 'open') throw new Error('Connection closed while sending.');
+      const slice = f.buf.slice(ci * CHUNK, (ci + 1) * CHUNK);
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, sess.aesKey, slice);
+      const header = new Uint8Array(21);
+      header[0] = 1;
+      new DataView(header.buffer).setUint32(1, fi);
+      new DataView(header.buffer).setUint32(5, ci);
+      header.set(iv, 9);
+      const packet = new Uint8Array(21 + cipher.byteLength);
+      packet.set(header, 0);
+      packet.set(new Uint8Array(cipher), 21);
+      while (sess.dc.bufferedAmount > 512 * 1024) {
+        await new Promise((res) => { sess.dc.onbufferedamountlow = () => res(); });
+      }
+      sess.dc.send(packet);
+      sess.sentBytes += slice.byteLength;
+      updateProgress(sess);
+    }
+  }
+  await sendControl(sess, { type: 'done' });
+  sess.done = true;
+  setStatus(sess, 'Transfer complete.');
+  setNext(sess, '');
+  const secs = sess.startedAt ? (Date.now() - sess.startedAt) / 1000 : 0;
+  sess.progressText = 'Sent ' + fmtBytes(sess.sentBytes) + (secs > 0.25 ? ' in ' + secs.toFixed(1) + 's (' + fmtBytes(Math.round(sess.sentBytes / secs)) + '/s)' : '') + '.';
+  if (sess === S) $('progressText').textContent = sess.progressText;
+  logHistory('send', sess.title, sess.files, 'complete', sess.fingerprint, sess.peerName);
+}
+async function finishReceive(sess) {
+  let allOk = true;
+  for (const f of sess.recvFiles) {
+    const expected = Math.ceil(f.size / CHUNK);
+    let ok = f.chunks.size === expected;
+    let blob = null;
+    if (ok) {
+      const parts = [];
+      for (let i = 0; i < expected; i++) parts.push(f.chunks.get(i));
+      blob = new Blob(parts, { type: f.type });
+      const hash = await sha256hex(await blob.arrayBuffer());
+      ok = hash === f.sha256;
+    }
+    if (!ok) allOk = false;
+    f.ok = ok;
+    f.blobUrl = ok && blob ? URL.createObjectURL(blob) : '';
+  }
+  sess.receivedReady = true;
+  sess.manifestReady = false;
+  sess.done = true;
+  setStatus(sess, allOk ? 'Transfer complete. Every file hash checked.' : 'Transfer finished with a hash mismatch. Do not trust the mismatched file.');
+  setNext(sess, '');
+  logHistory('receive', sess.manifest.title || '', sess.recvFiles, allOk ? 'complete' : 'failed', sess.fingerprint, sess.peerName);
+  if (sess === S) renderSession(sess);
+}
+function endSession(sess) {
+  teardown(sess);
+  setStatus(sess, 'Transfer ended.');
+}
+
+/* ---------- sender flow ---------- */
+$('sendFiles').addEventListener('change', () => {
+  const ul = $('sendFileList');
+  ul.innerHTML = '';
+  Array.from($('sendFiles').files).forEach((f) => {
+    const li = document.createElement('li');
+    li.textContent = f.name + ' (' + fmtBytes(f.size) + ')';
+    ul.appendChild(li);
+  });
+});
+$('sendForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideError('sendError');
+  const message = $('sendMessage').value;
+  const fileInput = $('sendFiles');
+  if (!message && fileInput.files.length === 0) {
+    showError('sendError', 'Write a message or attach a file first.');
+    return;
+  }
+  if (fileInput.files.length > MAX_FILES) {
+    showError('sendError', 'At most 5 files per transfer.');
+    return;
+  }
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  try {
+    teardown(SS);
+    SS.files = [];
+    for (const f of fileInput.files) {
+      if (f.size > MAX_FILE_BYTES) throw new Error('File ' + f.name + ' is over the 10 MB limit.');
+      const buf = await f.arrayBuffer();
+      const priv = privacyProcess(buf);
+      if (priv.status === 'failed') throw new Error('Privacy check failed on ' + f.name + '. It was not sent.');
+      SS.files.push({ name: f.name, type: f.type || 'application/octet-stream', size: priv.buf.byteLength, buf: priv.buf, sha256: await sha256hex(priv.buf), privacy: { status: priv.status, removed: priv.removed, format: priv.format, labels: priv.labels, note: priv.note } });
+    }
+    SS.title = $('sendTitle').value.trim();
+    SS.message = message;
+    SS.ownName = displayName();
+    SS.room = randomRoom();
+    SS.ecdh = await genEcdh();
+    SS.pc = new RTCPeerConnection({ iceServers: iceServers() });
+    watchConnection(SS);
+    SS.dc = SS.pc.createDataChannel('ddrop', { ordered: true });
+    wireChannel(SS);
+    const offer = await SS.pc.createOffer();
+    await SS.pc.setLocalDescription(offer);
+    await waitIce(SS.pc);
+    const pub = await exportEcdhPub(SS.ecdh);
+    const code = buildCode({ v: 1, t: 'offer', room: SS.room, exp: Date.now() + CODE_TTL_MS, sdp: SS.pc.localDescription.sdp, ecdh: pub, from: SS.ownName });
+    SS.code = code;
+    SS.link = makeLink('invite', code);
+    SS.codeTitle = 'Your transfer code';
+    SS.codeStatus = 'Send the invite link below to the other side, or share the code or the QR under it. On one phone, switch to Receive and paste the link or code there.';
+    SS.started = true;
+    $('answerIn').value = '';
+    $('answerPreview').hidden = true;
+    setStatus(SS, 'Waiting for the other side to answer. Share the code or QR above.');
+    setNext(SS, 'Next: when they answer, paste their answer code in the box below and press Connect with answer.');
+    showQR($('qrImg'), $('qrNote'), code);
+    SS.qrSrc = $('qrImg').src || '';
+    SS.qrNote = $('qrNote').hidden ? '' : $('qrNote').textContent;
+    renderActive();
+    $('codeOut').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (err) {
+    showError('sendError', err.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+$('connectAnswerBtn').addEventListener('click', async () => {
+  hideError('answerError');
+  if (!SS.pc) {
+    showError('answerError', 'Make a transfer code first.');
+    return;
+  }
+  let ans;
+  try {
+    ans = parseCode($('answerIn').value);
+  } catch (err) {
+    showError('answerError', err.message);
+    return;
+  }
+  if (ans.t !== 'answer') {
+    showError('answerError', 'That is not an answer code. Paste the code the receiver made.');
+    return;
+  }
+  if (ans.room !== SS.room) {
+    showError('answerError', 'That answer is for a different room (' + ans.room + '). Check the code.');
+    return;
+  }
+  const btn = $('connectAnswerBtn');
+  btn.disabled = true;
+  try {
+    const pub = await importEcdhPub(ans.ecdh);
+    const d = await deriveAes(SS.ecdh.privateKey, pub);
+    SS.aesKey = d.key;
+    SS.fingerprint = d.fp;
+    SS.peerName = ans.from || '';
+    await SS.pc.setRemoteDescription({ type: 'answer', sdp: ans.sdp });
+    setStatus(SS, SS.peerName ? 'Answer accepted. Connecting to ' + SS.peerName + '...' : 'Answer accepted. Connecting directly...');
+    setNext(SS, 'Next: wait for the other side to accept. They review what you are sending first.');
+    showVerify(SS);
+    renderActive();
+  } catch (err) {
+    showError('answerError', 'Could not use that answer: ' + err.message);
+    btn.disabled = false;
+  }
+});
+
+/* ---------- receiver flow ---------- */
+$('receiveForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideError('joinError');
+  let offer;
+  try {
+    offer = parseCode($('joinCode').value);
+  } catch (err) {
+    showError('joinError', err.message);
+    return;
+  }
+  if (offer.t !== 'offer') {
+    showError('joinError', 'That is an answer code, not a sender code. Paste the sender code.');
+    return;
+  }
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  try {
+    teardown(SR);
+    SR.room = offer.room;
+    SR.peerName = offer.from || '';
+    SR.ownName = displayName();
+    SR.ecdh = await genEcdh();
+    const pub = await importEcdhPub(offer.ecdh);
+    const d = await deriveAes(SR.ecdh.privateKey, pub);
+    SR.aesKey = d.key;
+    SR.fingerprint = d.fp;
+    SR.pc = new RTCPeerConnection({ iceServers: iceServers() });
+    watchConnection(SR);
+    SR.pc.ondatachannel = (ev) => {
+      SR.dc = ev.channel;
+      wireChannel(SR);
+    };
+    await SR.pc.setRemoteDescription({ type: 'offer', sdp: offer.sdp });
+    const answer = await SR.pc.createAnswer();
+    await SR.pc.setLocalDescription(answer);
+    await waitIce(SR.pc);
+    const myPub = await exportEcdhPub(SR.ecdh);
+    const code = buildCode({ v: 1, t: 'answer', room: SR.room, exp: Date.now() + CODE_TTL_MS, sdp: SR.pc.localDescription.sdp, ecdh: myPub, from: SR.ownName });
+    SR.code = code;
+    SR.link = makeLink('answer', code);
+    SR.codeTitle = 'Your answer code';
+    SR.codeStatus = 'Send the answer link below back to the sender, or give them the code or the QR under it. Then wait here. On one phone, switch to Send and paste it in the answer box.';
+    SR.started = true;
+    setStatus(SR, 'Answer ready. Give this code or QR back to the sender, then wait for the connection.');
+    setNext(SR, 'Next: when they connect, you will see what they are sending. Check the verify code, then Accept or Decline. Nothing arrives until you accept.');
+    showVerify(SR);
+    showQR($('qrImg'), $('qrNote'), code);
+    SR.qrSrc = $('qrImg').src || '';
+    SR.qrNote = $('qrNote').hidden ? '' : $('qrNote').textContent;
+    renderActive();
+    $('codeOut').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (err) {
+    showError('joinError', err.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+$('acceptBtn').addEventListener('click', async () => {
+  SR.manifestReady = false;
+  SR.startedAt = Date.now();
+  setStatus(SR, 'Accepted. Receiving...');
+  setNext(SR, '');
+  SR.progressShown = true;
+  updateProgress(SR);
+  renderActive();
+  await sendControl(SR, { type: 'accept' });
+});
+$('declineBtn').addEventListener('click', async () => {
+  try { await sendControl(SR, { type: 'decline' }); } catch (e) {}
+  setStatus(SR, 'Declined.');
+  setNext(SR, '');
+  logHistory('receive', SR.manifest ? (SR.manifest.title || '') : '', SR.recvFiles || [], 'declined', SR.fingerprint, SR.peerName);
+  endSession(SR);
+});
+$('cancelBtn').addEventListener('click', () => {
+  teardown(S);
+  setStatus(S, 'Transfer ended.');
+  toast('Transfer ended. Nothing was stored anywhere.');
+});
+$('copyCodeBtn').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('codeOut').value);
+    toast('Code copied.');
+  } catch (e) {
+    $('codeOut').select();
+    toast('Copy did not work. Select the code by hand.');
+  }
+});
+function escHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+$('copyLinkBtn').addEventListener('click', async () => {
+  const url = $('linkOut').value;
+  const nick = $('linkNick').textContent;
+  try {
+    if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob(['<a href="' + escHtml(url) + '">' + escHtml(nick) + '</a>'], { type: 'text/html' }),
+        'text/plain': new Blob([url], { type: 'text/plain' }),
+      })]);
+      toast('Copied as ' + nick + '.');
+      return;
+    }
+    throw new Error('rich clipboard unavailable');
+  } catch (e) {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast('Link copied.');
+    } catch (e2) {
+      $('linkOut').hidden = false;
+      $('showLinkBtn').textContent = 'Hide link';
+      $('linkOut').select();
+      toast('Copy did not work. The link is shown, copy it by hand.');
+    }
+  }
+});
+$('shareLinkBtn').addEventListener('click', async () => {
+  const url = $('linkOut').value;
+  const name = S.ownName || displayName();
+  const text = S.role === 'send'
+    ? name + ' invited you to a private D.DROP transfer. Open the link to connect.'
+    : name + ' answered your D.DROP invite. Open the link in the page where you made the invite.';
+  try { await navigator.share({ title: 'D.DROP', text, url }); } catch (e) {}
+});
+$('showLinkBtn').addEventListener('click', () => {
+  const out = $('linkOut');
+  out.hidden = !out.hidden;
+  $('showLinkBtn').textContent = out.hidden ? 'Show link' : 'Hide link';
+});
+$('pauseBtn').addEventListener('click', () => {
+  if (S.role !== 'send') return;
+  S.paused = !S.paused;
+  renderSession(S);
+  toast(S.paused ? 'Paused. The other side is waiting.' : 'Resumed.');
+});
+async function sendChat() {
+  const text = $('chatInput').value.trim();
+  if (!text || !S.chatOpen) return;
+  $('chatInput').value = '';
+  S.chat.push({ who: 'me', name: S.ownName || '', text });
+  renderSession(S);
+  try {
+    await sendControl(S, { type: 'chat', text, from: S.ownName || displayName() });
+  } catch (e) {
+    toast('That message did not send.');
+  }
+}
+$('chatSendBtn').addEventListener('click', sendChat);
+$('chatInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); sendChat(); }
+});
+
+/* ---------- history: on this device only, no content, no dates ---------- */
+const HIST_KEY = 'ddrop-p2p-history-v1';
+function historyEnabled() {
+  return $('historyToggle').checked;
+}
+function loadHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+function logHistory(dir, title, files, status, fp, peer) {
+  if (!historyEnabled()) return;
+  const h = loadHistory();
+  h.unshift({
+    dir,
+    title: title || '(No title)',
+    files: (files || []).map((f) => f.name),
+    totalBytes: (files || []).reduce((s, f) => s + (f.size || 0), 0),
+    status,
+    fp: fp || '',
+    peer: peer || '',
+  });
+  try {
+    localStorage.setItem(HIST_KEY, JSON.stringify(h.slice(0, 50)));
+  } catch (e) {}
+  renderHistory();
+}
+function renderHistory() {
+  const q = ($('searchHistory').value || '').toLowerCase();
+  const h = loadHistory().filter((it) => !q || (it.title + ' ' + it.files.join(' ') + ' ' + it.status + ' ' + it.dir).toLowerCase().includes(q));
+  const ul = $('historyList');
+  ul.innerHTML = '';
+  $('historyEmpty').hidden = h.length !== 0;
+  h.forEach((it) => {
+    const li = document.createElement('li');
+    li.textContent = (it.dir === 'send' ? 'Sent' : 'Received') + '  |  ' + it.title + '  |  ' +
+      (it.files.join(', ') || 'message only') + '  |  ' + fmtBytes(it.totalBytes) + '  |  ' + it.status +
+      (it.peer ? '  |  ' + (it.dir === 'send' ? 'to ' : 'from ') + it.peer : '') +
+      (it.fp ? '  |  verify ' + it.fp : '');
+    ul.appendChild(li);
+  });
+}
+$('searchHistory').addEventListener('input', renderHistory);
+$('clearHistoryBtn').addEventListener('click', () => {
+  if (!window.confirm('Clear the transfer history on this device?')) return;
+  localStorage.removeItem(HIST_KEY);
+  renderHistory();
+  toast('History cleared.');
+});
+
+/* ---------- QR scanning ---------- */
+let scanStream = null;
+let scanRaf = null;
+function detectorSupported() {
+  return 'BarcodeDetector' in window;
+}
+async function stopScan() {
+  if (scanRaf) cancelAnimationFrame(scanRaf);
+  scanRaf = null;
+  if (scanStream) {
+    scanStream.getTracks().forEach((t) => t.stop());
+    scanStream = null;
+  }
+  $('scanBox').hidden = true;
+}
+$('scanCameraBtn').addEventListener('click', async () => {
+  if (!detectorSupported()) {
+    $('scanNote').textContent = 'This browser cannot scan QR codes. Paste the code instead.';
+    $('scanNote').hidden = false;
+    return;
+  }
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const v = $('scanVideo');
+    v.srcObject = scanStream;
+    await v.play();
+    $('scanBox').hidden = false;
+    const det = new BarcodeDetector({ formats: ['qr_code'] });
+    const tick = async () => {
+      if (!scanStream) return;
+      try {
+        const codes = await det.detect(v);
+        if (codes && codes.length) {
+          $('joinCode').value = codes[0].rawValue;
+          updateJoinPreview();
+          await stopScan();
+          toast('QR code read. Tap Create answer code.');
+          return;
+        }
+      } catch (e) {}
+      scanRaf = requestAnimationFrame(tick);
+    };
+    tick();
+  } catch (err) {
+    $('scanNote').textContent = 'Camera was not available: ' + err.message;
+    $('scanNote').hidden = false;
+  }
+});
+$('scanStopBtn').addEventListener('click', stopScan);
+$('scanFileBtn').addEventListener('click', () => $('scanFileInput').click());
+$('scanFileInput').addEventListener('change', async () => {
+  const f = $('scanFileInput').files[0];
+  if (!f) return;
+  if (!detectorSupported()) {
+    $('scanNote').textContent = 'This browser cannot read QR codes from images. Paste the code instead.';
+    $('scanNote').hidden = false;
+    return;
+  }
+  try {
+    const bmp = await createImageBitmap(f);
+    const det = new BarcodeDetector({ formats: ['qr_code'] });
+    const codes = await det.detect(bmp);
+    if (codes && codes.length) {
+      $('joinCode').value = codes[0].rawValue;
+      updateJoinPreview();
+      toast('QR code read. Tap Create answer code.');
+    } else {
+      $('scanNote').textContent = 'No QR code found in that image.';
+      $('scanNote').hidden = false;
+    }
+  } catch (err) {
+    $('scanNote').textContent = 'Could not read that image: ' + err.message;
+    $('scanNote').hidden = false;
+  }
+});
+
+/* ---------- navigation ---------- */
+const VIEWS = ['transfer', 'history', 'help'];
+function showView(name) {
+  for (const v of VIEWS) {
+    $('view-' + v).hidden = (v !== name);
+  }
+  closeMenu();
+  window.scrollTo(0, 0);
+  if (name === 'history') renderHistory();
+}
+function openMenu() {
+  const nav = $('mainNav');
+  const open = nav.classList.toggle('open');
+  $('menuBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+function closeMenu() {
+  $('mainNav').classList.remove('open');
+  $('menuBtn').setAttribute('aria-expanded', 'false');
+}
+$('menuBtn').addEventListener('click', openMenu);
+$('mainNav').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-view]');
+  if (b) showView(b.getAttribute('data-view'));
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+function switchTab(which) {
+  S = which === 'send' ? SS : SR;
+  $('tabSend').classList.toggle('active', which === 'send');
+  $('tabReceive').classList.toggle('active', which === 'receive');
+  $('sendForm').hidden = which !== 'send';
+  $('receiveForm').hidden = which !== 'receive';
+  renderActive();
+}
+$('tabSend').addEventListener('click', () => switchTab('send'));
+$('tabReceive').addEventListener('click', () => switchTab('receive'));
+
+/* ---------- boot ---------- */
+/* ---------- invite and answer links ---------- */
+let lastHashSeen = '';
+function handleHashLink() {
+  const h = location.hash || '';
+  if (!h || h === lastHashSeen) return;
+  if (h.indexOf('#invite=') !== 0 && h.indexOf('#answer=') !== 0) return;
+  lastHashSeen = h;
+  const payload = h.slice(h.indexOf('=') + 1);
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  let obj = null;
+  try { obj = parseCode(payload); } catch (e) {}
+  if (!obj) {
+    toast('That link did not carry a usable code.');
+    return;
+  }
+  if (obj.t === 'offer') {
+    switchTab('receive');
+    $('joinCode').value = payload;
+    updateJoinPreview();
+    toast((obj.from || 'Someone') + ' invited you to a transfer. Review it, then create your answer code.');
+  } else if (obj.t === 'answer') {
+    $('answerIn').value = payload;
+    updateAnswerPreview();
+    toast('Answer link loaded. It is filled in under your transfer code, in the page where you made the invite.');
+  }
+}
+window.addEventListener('hashchange', handleHashLink);
+
+(function init() {
+  if (!window.isSecureContext) toast('Open this page over localhost or HTTPS. Encryption needs a secure page.');
+  if (!window.RTCPeerConnection) toast('This browser does not support WebRTC data channels.');
+  const saved = localStorage.getItem('ddrop-p2p-history-toggle');
+  if (saved !== null) $('historyToggle').checked = saved === '1';
+  $('historyToggle').addEventListener('change', () => {
+    localStorage.setItem('ddrop-p2p-history-toggle', $('historyToggle').checked ? '1' : '0');
+  });
+  const savedName = localStorage.getItem(NAME_KEY);
+  $('displayName').value = savedName || randomName();
+  if (!savedName) {
+    try { localStorage.setItem(NAME_KEY, $('displayName').value); } catch (e) {}
+  }
+  $('displayName').addEventListener('input', () => {
+    try { localStorage.setItem(NAME_KEY, $('displayName').value.trim()); } catch (e) {}
+  });
+  $('displayName').addEventListener('change', () => {
+    if (!$('displayName').value.trim()) $('displayName').value = randomName();
+    try { localStorage.setItem(NAME_KEY, $('displayName').value.trim()); } catch (e) {}
+  });
+  $('randomNameBtn').addEventListener('click', () => {
+    $('displayName').value = randomName();
+    try { localStorage.setItem(NAME_KEY, $('displayName').value); } catch (e) {}
+    toast('New temporary name: ' + $('displayName').value + '.');
+  });
+  $('joinCode').addEventListener('input', updateJoinPreview);
+  $('answerIn').addEventListener('input', updateAnswerPreview);
+  const sf = $('sendForm');
+  ['dragenter', 'dragover'].forEach((ev) => sf.addEventListener(ev, (e) => { e.preventDefault(); sf.classList.add('dragging'); }));
+  ['dragleave', 'drop'].forEach((ev) => sf.addEventListener(ev, (e) => { e.preventDefault(); sf.classList.remove('dragging'); }));
+  sf.addEventListener('drop', (e) => {
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (!files || !files.length) return;
+    const dt = new DataTransfer();
+    for (const f of files) dt.items.add(f);
+    $('sendFiles').files = dt.files;
+    $('sendFiles').dispatchEvent(new Event('change'));
+    toast(files.length + (files.length === 1 ? ' file' : ' files') + ' added.');
+  });
+  renderHistory();
+  showView('transfer');
+  handleHashLink();
+})();
+</script>
+</body>
+</html>
