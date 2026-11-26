@@ -490,12 +490,13 @@ details[open] summary::after { transform: rotate(-135deg); }
         <p id="receivedMessage" class="message-text"></p>
         <ul id="receivedFiles" class="file-list"></ul>
       </div>
-      <div id="chatBox" hidden>
+      <div id="chatBox">
         <h3>Chat</h3>
+        <p class="hint" id="chatState">Chat opens when you connect.</p>
         <ul id="chatLog" class="chat-log"></ul>
         <div class="chat-row">
-          <input id="chatInput" type="text" maxlength="2000" placeholder="Message the other side" autocomplete="off">
-          <button class="btn primary" type="button" id="chatSendBtn">Send</button>
+          <input id="chatInput" type="text" maxlength="2000" placeholder="Message the other side" autocomplete="off" disabled>
+          <button class="btn primary" type="button" id="chatSendBtn" disabled>Send</button>
         </div>
         <p class="fine">Chat lives only while you are connected. It is never saved anywhere.</p>
       </div>
@@ -716,8 +717,10 @@ function renderSession(sess) {
   });
   $('privacyBox').hidden = !privShown;
   $('pauseBtn').textContent = sess.paused ? 'Resume' : 'Pause';
-  $('chatBox').hidden = !sess.chatOpen;
-  if (sess.chatOpen) renderChatLog(sess);
+  $('chatState').textContent = sess.chatOpen ? 'Connected. Chat is live.' : 'Chat opens when you connect.';
+  $('chatInput').disabled = !sess.chatOpen;
+  $('chatSendBtn').disabled = !sess.chatOpen;
+  renderChatLog(sess);
 }
 function renderChatLog(sess) {
   const ul = $('chatLog');
@@ -1598,7 +1601,7 @@ async function handleControl(sess, msg) {
   } else if (msg.type === 'chat' && typeof msg.text === 'string' && msg.text) {
     sess.chat.push({ who: 'peer', name: msg.from || sess.peerName || 'Other side', text: msg.text.slice(0, 2000) });
     if (sess === S) renderSession(sess);
-    else toast('New message from ' + (sess.peerName || 'the other side') + '. Switch tabs to read it.');
+    else toast('New message from ' + (sess.peerName || 'the other side') + ': ' + msg.text.slice(0, 80));
   }
 }
 function updateProgress(sess) {
